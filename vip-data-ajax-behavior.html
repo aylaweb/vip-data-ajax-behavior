@@ -1,0 +1,84 @@
+<!--
+Copyright (c) 2016 The Ayla Project Authors.
+This code may only be used under the MIT style license found at http://aylaweb.github.io/LICENSE.txt
+The complete set of authors may be found at http://aylaweb.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://aylaweb.github.io/CONTRIBUTORS.txt
+-->
+
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-ajax/iron-ajax.html">
+
+<script>
+    Ayla = window.Ayla || {};
+    Ayla.VipDataAjaxBehavior = {
+        properties: {
+            dataSourceAjax: {
+                type: Array,
+                value: function () {
+                    return [];
+                },
+                observer: '_dataSourceAjaxInitChanged'
+            }
+        },
+        observers: ['_dataSourceAjaxChanged(dataSourceAjax.splices)'],
+        created: function () {
+            console.log(this.id + " -> " + this.localName + " -> vip-data-ajax -> Event created");
+        },
+        getDataAjax: function (dataSource) {
+            var requestAjax = document.createElement('iron-ajax');
+            requestAjax.url = dataSource.url;
+            requestAjax.handleAs = 'json';
+            requestAjax.addEventListener('response', this._onLoadHandler.bind(dataSource));
+            requestAjax.addEventListener('error', this._onErrorHandler.bind(dataSource));
+            requestAjax.generateRequest();
+        },
+        _onLoadHandler: function (e) {
+            e.detail.response.forEach(function (doc) {
+               // doc._id = doc.id;
+                for (var prop in this.data) {
+                    doc[prop] = this.data[prop];
+                }
+                /*  if (!(Ayla[this.localCollection]) || (window[this.localCollection])) {
+                 Ayla[this.localCollection] = new Mongo.Collection(null);
+                 }
+                 if (window[this.localCollection]) {
+                 window[this.localCollection].insert(doc);
+                 }
+                 else { */
+                Ayla[this.localCollection].insert(doc);
+                //  }
+            }, this);
+        },
+        _onErrorHandler: function (e) {
+
+        },
+        _dataSourceAjaxInitChanged: function (val, old) {
+            if (val) {
+                if (typeof val === "string")
+                {
+                    this.dataSourceAjax = JSON.parse(val);
+                }
+                else {
+                    val.forEach(this.getDataAjax, this);
+                }
+            }
+        },
+        _dataSourceAjaxChanged: function (changeRecord) {
+            if (changeRecord) {
+                changeRecord.indexSplices.forEach(function (s) {
+                    var newDataSources = s.object.slice(s.index, s.index + s.addedCount);
+                    newDataSources.forEach(this.getDataAjax, this);
+                }, this);
+            }
+        },
+        ready: function () {
+            console.log(this.id + " -> " + this.localName + " -> vip-data-ajax -> Event ready");
+        },
+        attached: function () {
+            console.log(this.id + " -> " + this.localName + " -> vip-data-ajax -> Event attached");
+        },
+        detached: function () {
+            console.log(this.id + " -> " + this.localName + " -> vip-data-ajax -> Event detached");
+        }
+    };
+</script>
